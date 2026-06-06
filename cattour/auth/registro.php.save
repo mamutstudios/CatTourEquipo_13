@@ -1,0 +1,70 @@
+<?php
+include '../config/db.php';
+$mensaje = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Sanitización de entradas
+    $nombre  = $conn->real_escape_string($_POST['nombre']);
+    $usuario = $conn->real_escape_string($_POST['usuario']);
+    $correo  = $conn->real_escape_string($_POST['correo']);
+    $numero  = $conn->real_escape_string($_POST['numero']);
+    
+    // ENCRIPTACIÓN: Nunca guardes la clave real, guarda el hash.
+    $password_plana = $_POST['password'];
+    $password_hash  = password_hash($password_plana, PASSWORD_BCRYPT);
+
+    // Intentar insertar en la base de datos
+    $sql = "INSERT INTO UsuarioCliente (usuario, nombre, correo, numero, password) 
+            VALUES ('$usuario', '$nombre', '$correo', '$numero', '$password_hash')";
+
+    if ($conn->query($sql) === TRUE) {
+        $mensaje = "<div class='alerta exito'>✅ Cuenta creada correctamente. <a href='login.php'>Inicia sesión aquí</a></div>";
+    } else {
+        // Si el usuario o correo ya existen, MariaDB lanzará un error por el índice UNIQUE
+        $mensaje = "<div class='alerta error'>❌ Error: El nombre de usuario o correo ya están registrados.</div>";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - CatTour</title>
+    <style>
+        :root { --morado: #6f42c1; --morado-claro: #f3effb; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--morado-claro); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: var(--morado); text-align: center; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--morado); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #4b2c85; }
+        .alerta { padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 14px; }
+        .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .link { text-align: center; margin-top: 15px; font-size: 14px; }
+        .link a { color: var(--morado); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Únete a CatTour 🐾</h2>
+    <?php echo $mensaje; ?>
+    
+    <form action="registro.php" method="POST">
+        <input type="text" name="nombre" placeholder="Nombre Completo" required>
+        <input type="text" name="usuario" placeholder="Nombre de Usuario (Login)" required>
+        <input type="email" name="correo" placeholder="Correo Electrónico" required>
+        <input type="text" name="numero" placeholder="Teléfono / WhatsApp">
+        <input type="password" name="password" placeholder="Contraseña Segura" required>
+        <button type="submit">CREAR CUENTA</button>
+    </form>
+
+    <div class="link">
+        ¿Ya tienes cuenta? <a href="login.php">Inicia Sesión</a>
+    </div>
+</div>
+
+</body>
+</html>

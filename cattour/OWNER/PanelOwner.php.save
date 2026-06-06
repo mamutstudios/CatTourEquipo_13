@@ -1,0 +1,234 @@
+<?php
+session_start();
+include '../config/db.php'; // Asumo la ruta de tu conexión MySQLi
+
+// 1. Control de Acceso Estricto (RBAC)
+// Verificamos que exista la sesión y que el rol sea exclusivamente 'Owner'
+if (!isset($_SESSION['empleado_id']) || $_SESSION['empleado_rol'] !== 'Owner') {
+    // Si un Admin u Operador intenta acceder aquí, se le expulsa.
+    header("Location: ../public/LoginEmploy.php");
+    exit();
+}
+
+$mensaje = "";
+$tipo_mensaje = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Sanitización básica de entradas
+    $nombre = trim($_POST['nombre']);
+    $usuario = trim($_POST['usuario']);
+    $password_raw = $_POST['password'];
+    $rol = $_POST['rol'];
+    $tiempoSesion = (int)$_POST['tiempoSesion']; // Casteo a entero por seguridad
+
+    // Validación de campos vacíos
+    if (empty($nombre) || empty($usuario) || empty($password_raw) || empty($rol) || empty($tiempoSesion)) {
+        $mensaje = "Todos los campos son obligatorios.";
+        $tipo_mensaje = "error";
+    } else {
+        // 2. Hashing de Contraseña (Bcrypt)
+        // JAMÁS guardes la variable $password_raw directamente en la BD.
+        $password_hashed = password_hash($password_raw, PASSWORD_BCRYPT);
+
+        // 3. Sentencia Preparada para evitar SQL Injection
+        $sql = "INSERT INTO Empleado (nombre, usuario, password, rol, tiempoSesion) VALUES (?, ?, ?, ?, ?)";
+        
+        if ($stmt = $conn->prepare($sql)) {
+            // 'ssssi' indica el tipo de dato: string, string, string, string, integer
+            $stmt->bind_param("ssssi", $nombre, $usuario, $password_hashed, $rol, $tiempoSesion);
+
+            if ($stmt->execute()) {
+                $mensaje = "Cuenta de $rol ($usuario) creada con éxito.";
+                $tipo_mensaje = "success";
+            } else {
+                // Manejo del error 1062: Violación de restricción UNIQUE (usuario duplicado)
+                if ($conn->errno == 1062) {
+                    $mensaje = "Error: El nombre de usuario '$usuario' ya está registrado.";
+                } else {
+                    $mensaje = "Error crítico en DB: " . $stmt->error;
+                }
+                $tipo_mensaje = "error";
+            }
+            $stmt->close();
+        } else {
+            $mensaje = "Error preparando la consulta: " . $conn->error;
+            $tipo_mensaje = "error";
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cuentas - Owner Panel</title>
+    <style>
+  <?php
+session_start();
+include '../config/db.php'; // Asumo la ruta de tu conexión MySQLi
+
+// 1. Control de Acceso Estricto (RBAC)
+// Verificamos que exista la sesión y que el rol sea exclusivamente 'Owner'
+if (!isset($_SESSION['empleado_id']) || $_SESSION['empleado_rol'] !== 'Owner') {
+    // Si un Admin u Operador intenta acceder aquí, se le expulsa.
+    header("Location: ../public/LoginEmploy.php");
+    exit();
+}
+
+$mensaje = "";
+$tipo_mensaje = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Sanitización básica de entradas
+    $nombre = trim($_POST['nombre']);
+    $usuario = trim($_POST['usuario']);
+    $password_raw = $_POST['password'];
+    $rol = $_POST['rol'];
+    $tiempoSesion = (int)$_POST['tiempoSesion']; // Casteo a entero por seguridad
+
+    // Validación de campos vacíos
+    if (empty($nombre) || empty($usuario) || empty($password_raw) || empty($rol) || empty($tiempoSesion)) {
+        $mensaje = "Todos los campos son obligatorios.";
+        $tipo_mensaje = "error";
+    } else {
+        // 2. Hashing de Contraseña (Bcrypt)
+        // JAMÁS guardes la variable $password_raw directamente en la BD.
+        $password_hashed = password_hash($password_raw, PASSWORD_BCRYPT);
+
+        // 3. Sentencia Preparada para evitar SQL Injection
+        $sql = "INSERT INTO Empleado (nombre, usuario, password, rol, tiempoSesion) VALUES (?, ?, ?, ?, ?)";
+
+        if ($stmt = $conn->prepare($sql)) {
+            // 'ssssi' indica el tipo de dato: string, string, string, string, integer      :root {
+            --morado: #6f42c1;
+            --morado-oscuro: #4b2c85;
+            --fondo: #f4f6f9;
+            --texto: #333;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--fondo);
+            margin: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            background: var(--morado-oscuro);
+            color: white;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;}
+        .sidebar p { font-size: 0.9rem; color: #ccc; }
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            text-align: center;
+        }
+        .sidebar a:hover { background: rgba(255,255,255,0.2); }
+        .main-content {
+            flex: 1;
+            padding: 40px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card h1 { color: var(--morado); margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--texto); }
+        input[type="text"], input[type="password"], select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--morado);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover { background: var(--morado-oscuro); }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .alert.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Panel Owner</h2>
+    <p>Bienvenido, <?php echo htmlspecialchars($_SESSION['empleado_nombre']); ?></p>
+    <a href="dashboard.php">Ver Dashboard General</a>
+    <a href="../public/logout.php" style="background: #dc3545;">Cerrar Sesión</a>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <h1>Crear Nuevo Personal</h1>
+        
+        <?php if ($mensaje): ?>
+            <div class="alert <?php echo $tipo_mensaje; ?>"><?php echo $mensaje; ?></div>
+        <?php endif; ?>
+
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
+            <div class="form-group">
+                <label for="nombre">Nombre Completo</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </div>
+
+            <div class="form-group">
+                <label for="usuario">Nombre de Usuario (Login)</label>
+                <input type="text" id="usuario" name="usuario" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña temporal</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="rol">Rol del Sistema</label>
+                <select id="rol" name="rol" required>
+                    <option value="">Seleccione un rol...</option>
+                    <option value="Admin">Administrador (Admin)</option>
+                    <option value="Operador">Operador (Staff)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tiempoSesion">Tiempo máximo de sesión (en minutos)</label>
+                <input type="number" id="tiempoSesion" name="tiempoSesion" value="60" min="15" max="480" required>
+            </div>
+
+            <button type="submit">Registrar Empleado</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
