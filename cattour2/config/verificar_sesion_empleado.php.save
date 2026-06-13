@@ -1,0 +1,43 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Forzar la zona horaria de México para que el reloj de AWS no se desfase
+date_default_timezone_set('America/Mexico_City');
+
+// 1. Si es cliente, congelar este script
+if (isset($_SESSION['user_id'])) {
+    return; 
+}
+
+// 2. Si no hay sesión de empleado, expulsar al login correcto
+if (!isset($_SESSION['empleado_id'])) {
+    header("Location: ../auth/LoginEmploy.php");
+    exit();
+}
+
+// 3. Control de Inactividad Dinámica
+if (isset($_SESSION['ultimo_acceso'])) {
+    $tiempo_inactivo = time() - $_SESSION['ultimo_acceso'];
+    $max_tiempo_permitido = isset($_SESSION['duracion_maxima']) ? (int)$_SESSION['duracion_maxima'] : (15 * 60);
+
+    if ($tiempo_inactivo > $max_tiempo_permitido) {
+        // Limpiar datos de empleado
+        unset($_SESSION['empleado_id']);
+        unset($_SESSION['empleado_nombre']);
+        unset($_SESSION['empleado_rol']);
+        unset($_SESSION['duracion_maxima']);
+        unset($_SESSION['ultimo_acceso']);
+        
+        session_destroy();
+        
+        // Redirección corregida a la carpeta auth/
+        header("Location: ../auth/LoginEmploy.php?error=sesion_expirada");
+        exit();
+    }
+}
+
+// Renovar estampa de tiempo si sigue activo
+$_SESSION['ultimo_acceso'] = time();
+?>

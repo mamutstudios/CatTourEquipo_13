@@ -1,0 +1,178 @@
+assoc();
+
+if (!$reservaInfo) {
+    // Si la reserva no existe, redirigir al panel principal
+    header("Location: panelOperador.php");
+    exit();
+}
+
+// 4. CONSULTAR LOS PASAJEROS ASOCIADOS A ESTA RESERVA
+// Nota: Se asume una tabla intermedia o de detalle llamada 'PasajerosReserva' o similar.
+// Ajusta los nombres de las columnas ('nombre', 'apellido', 'numPasaporte', 'idPasajero') según tu esquema.
+$sqlPasajeros = "SELECT idPasajero, nombre, apellido, numPasaporte 
+                 FROM PasajerosReserva 
+                 WHERE idReserva = ?";
+
+$stmtPasajeros = $conn->prepare($sqlPasajeros);
+$stmtPasajeros->bind_param("i", $idReservaSel);
+$stmtPasajeros->execute();
+$resultPasajeros = $stmtPasajeros->get_result();
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expediente de Pasajeros - CatTour</title>
+    <style>
+        :root {
+            --color-principal: #6f42c1;
+            --color-oscuro: #4b2c85;
+            --color-suave: #f3effb;
+            --texto-oscuro: #333;
+            --color-info: #17a2b8;
+            --color-info-hover: #117a8b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            background-color: #fcfcfd;
+            color: var(--texto-oscuro);
+            display: flex;
+        }
+
+        /* Sidebar Lateral (Mismo diseño para consistencia visual) */
+        .sidebar {
+            width: 260px;
+            background-color: var(--color-oscuro);
+            color: white;
+            min-height: 100vh;
+            padding: 30px 20px;
+            box-sizing: border-box;
+        }
+        .sidebar h2 { margin: 0 0 10px 0; font-size: 22px; }
+        .sidebar .user-info { font-size: 14px; opacity: 0.8; margin-bottom: 40px; }
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.05);
+        }
+        .sidebar a:hover { background: rgba(255,255,255,0.15); }
+
+        /* Contenido Principal */
+        .main-content { flex-grow: 1; padding: 40px; }
+
+        .header-title {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            margin-bottom: 35px;
+            border: 1px solid #efebf7;
+        }
+        .header-title h1 { margin: 0; color: var(--color-oscuro); font-size: 28px; }
+        
+        .btn-regresar {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--color-principal);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .btn-regresar:hover { text-decoration: underline; }
+
+        /* Sección de Tabla */
+        .pasajeros-section { background: white; padding: 30px; border-radius: 12px; border: 1px solid #efebf7; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .meta-info { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #efebf7; }
+        .meta-info p { margin: 5px 0; font-size: 15px; color: #555; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #efebf7; }
+        th { background: var(--color-suave); color: var(--color-oscuro); }
+
+        .btn-documentos {
+            background: var(--color-principal);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .btn-documentos:hover { background: var(--color-oscuro); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>CatTour 🚢</h2>
+        <div class="user-info">
+            👤 <?php echo htmlspecialchars($empleado_nombre); ?><br>
+            <small style="color: #a29bfe;">Rol: <?php echo htmlspecialchars($empleado_rol); ?></small>
+        </div>
+        <a href="panelOperador.php">🗺️ Control de Viajes</a>
+        <a href="../auth/logout.php" style="background: #dc3545; margin-top: 50px;">🚪 Cerrar Sesión</a>
+    </div>
+
+    <div class="main-content">
+        <a href="panelOperador.php?idViaje=<?php echo $idReservaSel; ?>#tabla-reservas" class="btn-regresar">⬅️ Volver al Panel de Operador</a>
+
+        <div class="header-title">
+            <h1>Auditoría de Expediente de Pasajeros</h1>
+            <p style="color: #666; margin: 5px 0 0 0;">Verificación de identidad y documentación obligatoria para abordaje.</p>
+        </div>
+
+        <div class="pasajeros-section">
+            <div class="meta-info">
+                <h3>Detalles de la Reservación #<?php echo $reservaInfo['idReserva']; ?></h3>
+                <p><strong>Cliente Titular:</strong> <?php echo htmlspecialchars($reservaInfo['cliente']); ?></p>
+                <p><strong>Destino:</strong> <span style="color: var(--color-principal); font-weight: bold;"><?php echo htmlspecialchars($reservaInfo['pais']); ?></span></p>
+                <p><strong>Ruta:</strong> <?php echo htmlspecialchars($reservaInfo['ruta']); ?></p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Pasajero</th>
+                        <th>Nombre Completo</th>
+                        <th>Nº Pasaporte / Documento</th>
+                        <th style="text-align: center;">Acción Administrativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($resultPasajeros->num_rows > 0): ?>
+                        <?php while($pasajero = $resultPasajeros->fetch_assoc()): ?>
+                            <tr>
+                                <td><strong>#<?php echo $pasajero['idPasajero']; ?></strong></td>
+                                <td><?php echo htmlspecialchars($pasajero['nombre'] . ' ' . $pasajero['apellido']); ?></td>
+                                <td>📋 <?php echo htmlspecialchars($pasajero['numPasaporte']); ?></td>
+                                <td style="text-align: center;">
+                                    <!-- Enlace dinámico a la revisión de la documentación específica de ese pasajero -->
+                                    <a href="ver_documentos.php?idPasajero=<?php echo $pasajero['idPasajero']; ?>&idReserva=<?php echo $idReservaSel; ?>" class="btn-documentos">📂 Ver Documentos</a>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr><td colspan="4" style="text-align: center; color: #dc3545;">No se encontraron pasajeros registrados para esta reservación.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
+<?php
+$stmtInfo->close();
+$stmtPasajeros->close();
+$conn->close();
+?>
